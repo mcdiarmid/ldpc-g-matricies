@@ -1,3 +1,4 @@
 tabula-py
 pandas
 requests
+jpype1
