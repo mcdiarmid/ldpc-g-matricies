@@ -42,8 +42,8 @@ def ishexadecimal(string: str) -> bool:
 
 
 def download_pdf(
-        url: str,
-        destination: Path
+    url: str,
+    destination: Path
 ) -> Path:
     """
     Downloads a requested pdf, names the file based on the tail of the url, 
@@ -75,11 +75,11 @@ def download_pdf(
 
 
 def construct_matrix(
-        k: int,
-        n: int,
-        circulant_size: int,
-        circulants: List[int]
-) -> np.array:
+    k: int,
+    n: int,
+    circulant_size: int,
+    circulants: List[int]
+) -> np.ndarray:
     """
     Constructs an LDPC generator matrix based off size info and a list of circulants
 
@@ -148,42 +148,37 @@ def extract_generator_matricies_irig106() -> Dict[str, np.array]:
     dfs: List[pd.DataFrame] = tabula.read_pdf(
         pdf_file,
         pages=RELEVANT_CH2_PAGES,
-        lattice=True  # Required for one-row tables continued from prev page
+        lattice=True,  # Required for one-row tables continued from prev page
+        pandas_options={"header": None}
     )
+    dfs = [df.dropna(axis="columns", how="all") for df in dfs if not df.empty]
 
     # Join relevant page separated dfs pertaining to the same table
     generator_dfs: Dict[str, List[str]] = {}
-    key = None
+    table_key = None
 
-    for i, df in enumerate(dfs):
-        if len(df.columns) < 2 and df.empty:  # Fix for random empty tables
+    for df in dfs:
+        if len(df.columns) < 2:  # Fix for random empty tables
             continue
 
-        if df.empty:  # Fix for single row tables (from previous page)
-            key_column = df.columns[1]
-            unfiltered_data = []
-        else:
-            key_column = df.columns[-2]
-            unfiltered_data = [x.replace('\r', '') for x in df[key_column].values]
-        
-        if key_column.startswith('Table'):
-            key = key_column
+        key_column = df.columns[-1]
+        unfiltered_data = [x.replace('\r', '') for x in df[key_column].values]
 
+        # Create table entry
+        if unfiltered_data[0].startswith('Table'):
+            table_key, *unfiltered_data = unfiltered_data
             if "Row 1" in unfiltered_data:
                 generator_start = unfiltered_data.index("Row 1")
             else:
                 generator_start = -1
-            
-            key += ''.join(f' {item}' for item in unfiltered_data[:generator_start])
-            generator_dfs[key] = []
+            table_key += ''.join(f' {item}' for item in unfiltered_data[:generator_start])
+            generator_dfs[table_key] = []
             del unfiltered_data[:generator_start]
-        else:
-            unfiltered_data.insert(0, key_column.replace('\r', ''))
 
-        if TABLE_TITLE_IRIG106_PATTERN.search(key):
-            generator_dfs[key].extend([x for x in unfiltered_data if ishexadecimal(x)])
+        if TABLE_TITLE_IRIG106_PATTERN.search(table_key):
+            generator_dfs[table_key].extend([x for x in unfiltered_data if ishexadecimal(x)])
         else:
-            del generator_dfs[key]
+            del generator_dfs[table_key]
 
     # Create generator matricies from tables of circulant rows
     generators: Dict[str, np.array] = {}
@@ -200,8 +195,8 @@ def extract_generator_matricies_irig106() -> Dict[str, np.array]:
 
 
 def write_matrix_to_alist(
-        name: str,
-        matrix: np.array
+    name: str,
+    matrix: np.ndarray
 ) -> None:
     """
     Writes an alist file for a given LDPC generator matrix
@@ -231,6 +226,13 @@ def write_matrix_to_alist(
     with open(filepath, 'w') as f:
         f.writelines([' '.join(f'{x:.0f}' for x in it) +  ' \n' for it in ordered_iterables])
         _logger.info(f"Wrote {filepath.stat().st_size} bytes to {filepath}")
+
+
+def plot_matrix_bitmap(matrix: np.ndarray) -> None:
+    import matplotlib.pyplot as plt
+    f, ax = plt.subplots(1)
+    ax.imshow(matrix, cmap="Greys")
+    f.show()
 
 
 if __name__ == "__main__":
