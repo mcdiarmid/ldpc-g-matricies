@@ -27,12 +27,9 @@ import requests
 
 IRIG106_2020_CH2_URL = "http://www.irig106.org/docs/106-20/chapter2.pdf"
 RELEVANT_CH2_PAGES = list(range(107, 138))
-TABLE_TITLE_IRIG106_PATTERN = re.compile(r"""
-    Table D-\d. ?
-    First Rows of Circulants in Generator Matrix
-    , r=\d+/\d+, k=\d+
-    """,
-    re.VERBOSE
+TABLE_TITLE_IRIG106_PATTERN = re.compile(
+    r"Table D-\d\.First Rows of Circulants in Generator Matrix, "
+    r"r=\d+/\d+, k=\d+"
 )
 PARAM_IRIG106_PATTERN = re.compile(r'r=(?P<r>\d+/\d+), k=(?P<k>\d+)')
 REPO_DIR = Path(__file__).parent
