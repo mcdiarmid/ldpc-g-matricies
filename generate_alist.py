@@ -215,8 +215,8 @@ def write_matrix_to_alist(
         (max(col_sums), max(row_sums)),
         col_sums,
         row_sums,
-        *[np.where(matrix[:, col])[0] for col in range(n)],
-        *[np.where(matrix[row, :])[0] for row in range(k)],
+        *[np.where(matrix[:, col])[0]+1 for col in range(n)],
+        *[np.where(matrix[row, :])[0]+1 for row in range(k)],
     ]
 
     # Dump lines to file
